@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatZoeira Ultra EXTREMO</title>
+<style>
+body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial, sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;}
+.container{width:95%;max-width:900px;background:#111;border-radius:15px;padding:20px;box-shadow:0 0 50px rgba(255,221,87,0.5);display:flex;flex-direction:column;}
+h1{text-align:center;color:#ffdd57;margin-bottom:10px;}
+.desc{text-align:center;color:#ccc;margin-bottom:15px;font-size:14px;}
+.chat-box{background:#1a1a1a;border-radius:12px;height:60vh;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+.msg{padding:8px 12px;border-radius:10px;max-width:80%;position:relative;word-wrap:break-word;}
+.you{background:#333;color:#fff;align-self:flex-end;}
+.bot{background:#ffdd57;color:#111;align-self:flex-start;}
+.bot img,.bot video{max-width:200px;max-height:200px;display:block;margin-top:4px;border-radius:6px;}
+.controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+input[type=text]{flex:1;padding:12px;border-radius:10px;border:none;background:#222;color:#fff;}
+button{padding:12px 18px;border-radius:10px;border:none;background:#ffdd57;color:#111;font-weight:bold;cursor:pointer;transition:0.2s;}
+button:hover{opacity:0.9;transform:scale(1.02);}
+.modes{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.mode-btn{padding:6px 12px;border-radius:999px;border:1px solid #444;background:#222;color:#ccc;cursor:pointer;font-size:13px;transition:0.2s;}
+.mode-btn.active{border:1px solid #ffdd57;color:#ffdd57;}
+.media-options{display:flex;gap:8px;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>ChatZoeira Ultra EXTREMO</h1>
+<div class="desc">Digite qualquer coisa e veja a zoeira total: texto, imagens, GIFs, vídeos e sons! Modo EXTREMO pode responder sozinho infinitamente!</div>
+<div class="chat-box" id="chat"></div>
+<div class="controls">
+<input id="input" type="text" placeholder="Escreva aqui..." />
+<button id="send">Zoar!</button>
+<button id="clear">Limpar</button>
+<label style="display:flex;align-items:center;gap:4px;color:#ccc;font-size:13px;"><input type="checkbox" id="auto" /> Auto Resposta</label>
+<label style="display:flex;align-items:center;gap:4px;color:#ccc;font-size:13px;"><input type="checkbox" id="extremeAuto" /> Modo EXTREMO Automático</label>
+</div>
+<div class="modes">
+<div class="mode-btn" data-mode="sarcastic">Sarcasmo</div>
+<div class="mode-btn" data-mode="meme">Meme</div>
+<div class="mode-btn" data-mode="rhyme">Rima</div>
+<div class="mode-btn" data-mode="reverse">Invertido</div>
+<div class="mode-btn" data-mode="emoji">Emoji</div>
+<div class="mode-btn" data-mode="weird">Bizarro</div>
+<div class="mode-btn" data-mode="absurd">Absurdão</div>
+<div class="mode-btn" data-mode="pirate">Pirata</div>
+<div class="mode-btn" data-mode="extreme">EXTREMO</div>
+</div>
+<div class="media-options">
+<button id="genImage">Gerar Imagem</button>
+<button id="genVideo">Gerar Vídeo</button>
+</div>
+</div>
+<script>
+const chat=document.getElementById('chat');
+const input=document.getElementById('input');
+const send=document.getElementById('send');
+const clear=document.getElementById('clear');
+const auto=document.getElementById('auto');
+const extremeAuto=document.getElementById('extremeAuto');
+const modeBtns=document.querySelectorAll('.mode-btn');
+const genImage=document.getElementById('genImage');
+const genVideo=document.getElementById('genVideo');
+let activeMode=null;
+let autoInterval=null;
+let extremeInterval=null;
+
+const templates={
+    sarcastic:["Ah, claro, '{t}' é super importante 😏.","Sério mesmo? '{t}'? Que novidade."],
+    meme:["'{t}' — meme mode ON 😂", "Você disse '{t}' e virou meme instantâneo."],
+    rhyme:["'{t}' rima com batata, olha que chata!", "Se '{t}' fosse poema, seria hilária!"],
+    reverse:["{rev}","Versão invertida: {rev}"],
+    emoji:["{t} 😎🔥😂", "Emoji style: {emo}"],
+    weird:["'{t}' traduzido pro idioma das formigas: zzzt-zz", "Se '{t}' fosse sabor: pipoca solar"],
+    absurd:["'{t}' virou um elefante rosa falante!", "Imagine '{t}' cantando funk na lua."],
+    pirate:["Arrr! '{t}'? Isso é ouro, marujo! 🏴‍☠️", "O mar é bravo, mas '{t}' é mais! ⚓"],
+    extreme:["{t} EXPLODIU no multiverso!", "{t} agora é um dragão dançante com lasers!", "{t} + GIF + vídeo + som insano"]
+};
+
+const images=['https://i.imgur.com/3XkA9sd.png','https://i.imgur.com/v5v1aTt.png','https://i.imgur.com/dx5Z7zT.png','https://i.imgur.com/8l7XeQD.gif'];
+const videos=['https://www.w3schools.com/html/mov_bbb.mp4','https://www.w3schools.com/html/movie.mp4'];
+const sounds=['https://freesound.org/data/previews/341/341695_62452-lq.mp3','https://freesound.org/data/previews/156/156036_2737504-lq.mp3'];
+
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function reverseText(s){return s.split('').reverse().join('')}
+function makeEmojis(s){const em=['😂','🔥','🤌','🤣','🤡','😅','👀','✨','😎','🤯','👏'];return Array.from({length:3},()=>pick(em)).join(' ')}
+function escapeHtml(unsafe){return unsafe.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"})[m])}
+
+modeBtns.forEach(btn=>btn.addEventListener('click',()=>{
+    modeBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeMode=btn.dataset.mode;
+}));
+
+function appendMsg(kind,text,img=null,video=null){
+    const el=document.createElement('div');
+    el.className='msg '+(kind==='you'?'you':'bot');
+    el.innerHTML=`<strong>${kind==='you'?'Você':'Zoeira'}</strong>: ${text}`;
+    if(img){const i=document.createElement('img');i.src=img;el.appendChild(i);}
+    if(video){const v=document.createElement('video');v.src=video;v.autoplay=true;v.loop=true;v.muted=true;el.appendChild(v);}
+    chat.appendChild(el);
+    chat.scrollTop=chat.scrollHeight;
+}
+
+function generateResponse(text,mode){
+    const t=text.trim()||'...';
+    const rev=reverseText(t);
+    const emo=makeEmojis(t);
+    const m=mode||activeMode||pick(Object.keys(templates));
+    let tpl=pick(templates[m]);
+    let resp=tpl.replaceAll('{t}',escapeHtml(t)).replaceAll('{rev}',escapeHtml(rev)).replaceAll('{emo}',emo);
+    let img=null, video=null;
+    if(Math.random()<0.5) img=pick(images);
+    if(Math.random()<0.3) video=pick(videos);
+    if(Math.random()<0.6) playSound(pick(sounds));
+    appendMsg('bot',resp,img,video);
+}
+
+function playSound(src){const a=new Audio(src);a.volume=0.2;a.play();}
+
+function sendMessage(){const v=input.value;if(!v.trim())return;appendMsg('you',escapeHtml(v));generateResponse(v);input.value='';}
+
+send.addEventListener('click',sendMessage);
+clear.addEventListener('click',()=>{chat.innerHTML='';input.value='';});
+input.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
+
+auto.addEventListener('change',()=>{
+    if(auto.checked){
+        const lastYou=Array.from(chat.querySelectorAll('.you')).pop();
+        if(!lastYou){auto.checked=false;return;}
+        const v=lastYou.textContent.replace('Você: ','');
+        autoInterval=setInterval(()=>generateResponse(v),500);
+    }else if(autoInterval){clearInterval(autoInterval);autoInterval=null;}
+});
+
+extremeAuto.addEventListener('change',()=>{
+    if(extremeAuto.checked){
+        extremeInterval=setInterval(()=>generateResponse('Modo EXTREMO ativado!','extreme'),700);
+    }else if(extremeInterval){clearInterval(extremeInterval);extremeInterval=null;}
+});
+
+genImage.addEventListener('click',()=>{appendMsg('bot','Gerando imagem aleatória...',pick(images));});
+genVideo.addEventListener('click',()=>{appendMsg('bot','Gerando vídeo aleatório...',null,pick(videos));});
+</script>
+</body>
+</html>
